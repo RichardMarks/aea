@@ -22,6 +22,7 @@ typedef float AEA_f32;
 typedef double AEA_f64;
 
 // string
+typedef char AEA_char;
 typedef char* AEA_str;
 typedef const char* AEA_cstr;
 
