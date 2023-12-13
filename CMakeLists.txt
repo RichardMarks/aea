@@ -32,6 +32,8 @@ add_executable(aea_app src/main.c
         src/platform/mesh.h
         src/platform/shader.c
         src/platform/shader.h
+        src/platform/mesh_primitives.c
+        src/platform/mesh_primitives.h
 )
 
 target_include_directories(aea_app PRIVATE

@@ -56,7 +56,7 @@ extern AEA_void AEA_ReleaseMouse(struct AEA_Platform *platform);
 
 static GLenum AEA_CheckGLErrorA(AEA_cstr file, AEA_s32 line)
 {
-  fprintf(stderr, "%s CheckGLError: %s (%d) ... ", glGetString(GL_VERSION), file, line);
+//  fprintf(stderr, "%s CheckGLError: %s (%d) ... ", glGetString(GL_VERSION), file, line);
   GLenum error_code;
   while ((error_code = glGetError()) != GL_NO_ERROR)
   {
@@ -74,10 +74,10 @@ static GLenum AEA_CheckGLErrorA(AEA_cstr file, AEA_s32 line)
     }
     fprintf(stderr, "GL ERROR: %8X %s %s (%d)\n", error_code, error_message, file, line);
   }
-  if (!error_code)
-  {
-    fprintf(stderr, "NO ERROR\n");
-  }
+//  if (!error_code)
+//  {
+//    fprintf(stderr, "NO ERROR\n");
+//  }
   return error_code;
 }
 #define AEA_CheckGLError() AEA_CheckGLErrorA(__FILE__, __LINE__)

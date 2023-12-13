@@ -7,6 +7,7 @@
 #include "platform/platform.h"
 #include "platform/effect.h"
 #include "platform/mesh.h"
+#include "platform/mesh_primitives.h"
 
 #include "game_camera.h"
 /*
@@ -75,126 +76,25 @@ int main()
   
   // create a ground plane mesh
   struct AEA_Mesh ground_plane_mesh;
-  ground_plane_mesh.vertex_count = 4;
-  ground_plane_mesh.vertices = (struct AEA_Vertex *) malloc(sizeof(struct AEA_Vertex) * ground_plane_mesh.vertex_count);
+  memset(&ground_plane_mesh, 0, sizeof(struct AEA_Mesh));
+  AEA_InitPlaneMesh(&ground_plane_mesh, 100.0f, 100.0f);
   
-  AEA_f32 vertex_positions[] = {
-    -10.0f, 0.0f, -10.0f,
-    10.0f, 0.0f, -10.0f,
-    10.0f, 0.0f, 10.0f,
-    -10.0f, 0.0f, 10.0f,
-  };
-  
-  AEA_f32 vertex_normals[] = {
-    0.0f, 1.0f, 0.0f,
-    0.0f, 1.0f, 0.0f,
-    0.0f, 1.0f, 0.0f,
-    0.0f, 1.0f, 0.0f,
-  };
-  
-  AEA_f32 vertex_colors[] = {
-    1.0f, 0.0f, 0.0f, 1.0f,
-    0.0f, 1.0f, 0.0f, 1.0f,
-    0.0f, 0.0f, 1.0f, 1.0f,
-    1.0f, 1.0f, 1.0f, 1.0f,
-
-//    0.42f, 0.639f, 0.459f, 1.0f,
-//    0.42f, 0.639f, 0.459f, 1.0f,
-//    0.42f, 0.639f, 0.459f, 1.0f,
-//    0.42f, 0.639f, 0.459f, 1.0f,
-  };
-  
-  AEA_f32 vertex_uvs[] = {
-    0.0f, 1.0f,
-    1.0f, 1.0f,
-    1.0f, 0.0f,
-    0.0f, 0.0f,
-  };
-  
-  for (int i = 0; i < 4; i++) {
-    struct AEA_Vertex *vtx = &ground_plane_mesh.vertices[i];
-    vtx->position[0] = vertex_positions[i * 3];
-    vtx->position[1] = vertex_positions[i * 3 + 1];
-    vtx->position[2] = vertex_positions[i * 3 + 2];
-    vtx->normal[0] = vertex_normals[i * 3];
-    vtx->normal[1] = vertex_normals[i * 3 + 1];
-    vtx->normal[2] = vertex_normals[i * 3 + 2];
-    vtx->color[0] = vertex_colors[i * 4];
-    vtx->color[1] = vertex_colors[i * 4 + 1];
-    vtx->color[2] = vertex_colors[i * 4 + 2];
-    vtx->color[3] = vertex_colors[i * 4 + 3];
-    vtx->uv[0] = vertex_uvs[i * 2] * 10;
-    vtx->uv[1] = vertex_uvs[i * 2 + 1] * 10;
+  // scale the uvs so that there is one "checker" on the ground plane for each world space unit
+  for (AEA_size i = 0; i < 4; i++) {
+    ground_plane_mesh.vertices[i].uv[0] *= 50.0f;
+    ground_plane_mesh.vertices[i].uv[1] *= 50.0f;
   }
-  
-  ground_plane_mesh.index_count = 6;
-  ground_plane_mesh.indices = (AEA_u32 *) malloc(sizeof(AEA_u32) * ground_plane_mesh.index_count);
-  ground_plane_mesh.indices[0] = 0;
-  ground_plane_mesh.indices[1] = 1;
-  ground_plane_mesh.indices[2] = 2;
-  ground_plane_mesh.indices[3] = 0;
-  ground_plane_mesh.indices[4] = 2;
-  ground_plane_mesh.indices[5] = 3;
-  
-  // create the gl buffers for ground plane mesh (using uppercase naming for opengl convention)
-  AEA_u32 VAO, VBO, EBO;
-  glGenVertexArrays(1, &VAO);
-  AEA_CheckGLError();
-  glGenBuffers(1, &VBO);
-  AEA_CheckGLError();
-  glGenBuffers(1, &EBO);
-  AEA_CheckGLError();
-  
-  glBindVertexArray(VAO);
-  AEA_CheckGLError();
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  AEA_CheckGLError();
-  glBufferData(GL_ARRAY_BUFFER, sizeof(struct AEA_Vertex) * ground_plane_mesh.vertex_count, ground_plane_mesh.vertices, GL_STATIC_DRAW);
-  AEA_CheckGLError();
-  
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  AEA_CheckGLError();
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(AEA_u32) * ground_plane_mesh.index_count, ground_plane_mesh.indices, GL_STATIC_DRAW);
-  AEA_CheckGLError();
-  
-  glEnableVertexAttribArray(0);
-  AEA_CheckGLError();
-  glEnableVertexAttribArray(1);
-  AEA_CheckGLError();
-  glEnableVertexAttribArray(2);
-  AEA_CheckGLError();
-  glEnableVertexAttribArray(3);
-  AEA_CheckGLError();
-  
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(struct AEA_Vertex),(AEA_any)offsetof(struct AEA_Vertex, position));
-  AEA_CheckGLError();
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct AEA_Vertex),(AEA_any)offsetof(struct AEA_Vertex, normal));
-  AEA_CheckGLError();
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(struct AEA_Vertex),(AEA_any)offsetof(struct AEA_Vertex, color));
-  AEA_CheckGLError();
-  glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(struct AEA_Vertex),(AEA_any)offsetof(struct AEA_Vertex, uv));
-  AEA_CheckGLError();
-  
+
   // simple 2x2 checkerboard texture
   AEA_u8 ground_texture_data[16] = {
     0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xFF,
     0x00, 0x00, 0x00, 0xFF,0xFF, 0xFF, 0xFF, 0xFF,
   };
-  AEA_u32 ground_texture;
-  glGenTextures(1, &ground_texture);
-  AEA_CheckGLError();
   
-  glBindTexture(GL_TEXTURE_2D, ground_texture);
-  AEA_CheckGLError();
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, ground_texture_data);
-  AEA_CheckGLError();
-  glGenerateMipmap(GL_TEXTURE_2D);
-  AEA_CheckGLError();
-  
+  struct AEA_MeshRenderer *ground_renderer = AEA_CreateMeshRenderer();
+  AEA_BindMeshMeshRendererMesh(ground_renderer, &ground_plane_mesh);
+  AEA_BindMeshRendererTexture(ground_renderer, 2, 2, ground_texture_data);
+
   struct AEA_Effect ground_effect;
   AEA_cstr ground_vert = "#version 330 core\n"
                          "layout (location = 0) in vec3 aPos;\n"
@@ -292,19 +192,14 @@ int main()
     AEA_RenderBegin(platform);
     
     // draw here
-    glBindVertexArray(VAO);
-    
-    AEA_UseEffect(&ground_effect);
     
     // Model * View * Projection
     glm_perspective(glm_rad(game.camera.zoom), aspect, near_z, far_z, game.mat_projection);
     glm_mat4_mul(game.mat_projection, game.mat_view, mat_mvp);
     glm_mat4_mul(mat_mvp, ground_mat_model, mat_mvp);
     
-    AEA_SetEffectMVP(&ground_effect, "mvp", mat_mvp);
-    
-    glDrawElements(GL_TRIANGLES, (GLsizei)ground_plane_mesh.index_count, GL_UNSIGNED_INT, 0);
-    
+    AEA_DrawMeshRenderer(ground_renderer, &ground_effect, mat_mvp);
+
     AEA_RenderEnd(platform);
   }
   
@@ -312,11 +207,7 @@ int main()
   
   AEA_ReleaseMouse(platform);
   
-  glDeleteTextures(1, &ground_texture);
-  
-  glDeleteVertexArrays(1, &VAO);
-  glDeleteBuffers(1, &VBO);
-  glDeleteBuffers(1, &EBO);
+  glBindVertexArray(0);
   
   if (ground_plane_mesh.indices)
   {
@@ -328,6 +219,8 @@ int main()
     free(ground_plane_mesh.vertices);
   }
   
+  AEA_DestroyMeshRenderer(ground_renderer);
+
   AEA_DestroyPlatform(platform);
   platform = NULL;
   
