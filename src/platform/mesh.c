@@ -84,10 +84,13 @@ AEA_void AEA_DestroyMeshRenderer(struct AEA_MeshRenderer *mesh_renderer)
 
 AEA_void AEA_BindMeshMeshRendererMesh(struct AEA_MeshRenderer *mesh_renderer, struct AEA_Mesh *mesh)
 {
+  
   if (!mesh_renderer || !mesh)
   {
     return;
   }
+  
+  fprintf(stderr, "binding mesh with %lu vertices and %lu indices to mesh renderer\n", mesh->vertex_count, mesh->index_count);
   
   mesh_renderer->mesh = mesh;
   
@@ -179,8 +182,14 @@ AEA_void AEA_DrawMeshRenderer(struct AEA_MeshRenderer *mesh_renderer, struct AEA
   
   AEA_UseEffect(effect);
   AEA_SetEffectMVP(effect, "mvp", mat_mvp);
-  
-  glDrawElements(GL_TRIANGLES, (GLsizei)mesh_renderer->mesh->index_count, GL_UNSIGNED_INT, 0);
+  if (mesh_renderer->flags & AEA_MESH_RENDERER_STRIP)
+  {
+    glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) mesh_renderer->mesh->index_count, GL_UNSIGNED_INT, 0);
+  }
+  else
+  {
+    glDrawElements(GL_TRIANGLES, (GLsizei) mesh_renderer->mesh->index_count, GL_UNSIGNED_INT, 0);
+  }
   AEA_CheckGLError();
   
   glBindVertexArray(0);

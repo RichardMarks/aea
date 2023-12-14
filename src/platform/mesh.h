@@ -31,6 +31,8 @@ struct AEA_Mesh {
   AEA_size index_count;
 };
 
+#define AEA_MESH_RENDERER_STRIP 0x5
+
 struct AEA_MeshRenderer {
   AEA_s32 flags;
   AEA_u32 vao;

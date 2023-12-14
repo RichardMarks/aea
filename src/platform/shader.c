@@ -8,7 +8,7 @@
 
 AEA_u32 AEA_CompileVertexShader(AEA_cstr vert_source, struct AEA_BuildShaderStatus *status)
 {
-  fprintf(stderr, "compiling vertex shader\n%s\n", vert_source);
+//  fprintf(stderr, "compiling vertex shader\n%s\n", vert_source);
   AEA_u32 vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   
   glShaderSource(vertex_shader, 1, &vert_source, NULL);
@@ -25,7 +25,7 @@ AEA_u32 AEA_CompileVertexShader(AEA_cstr vert_source, struct AEA_BuildShaderStat
 
 AEA_u32 AEA_CompileFragmentShader(AEA_cstr frag_source, struct AEA_BuildShaderStatus *status)
 {
-  fprintf(stderr, "compiling fragment shader\n%s\n", frag_source);
+//  fprintf(stderr, "compiling fragment shader\n%s\n", frag_source);
   AEA_u32 fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
   
   glShaderSource(fragment_shader, 1, &frag_source, NULL);
@@ -83,5 +83,6 @@ AEA_u32 AEA_BuildShaderProgram(AEA_cstr vert_source, AEA_cstr frag_source, struc
   glDeleteShader(vertex_shader);
   glDeleteShader(fragment_shader);
   
+  fprintf(stderr, "built shader program\n");
   return program_id;
 }

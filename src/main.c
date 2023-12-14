@@ -94,7 +94,17 @@ int main()
   struct AEA_MeshRenderer *ground_renderer = AEA_CreateMeshRenderer();
   AEA_BindMeshMeshRendererMesh(ground_renderer, &ground_plane_mesh);
   AEA_BindMeshRendererTexture(ground_renderer, 2, 2, ground_texture_data);
-
+  
+  // create a sky dome mesh
+  struct AEA_Mesh sky_dome_mesh;
+  memset(&sky_dome_mesh, 0, sizeof(struct AEA_Mesh));
+  AEA_InitHemisphereMesh(&sky_dome_mesh, 50.0f, 15, 7);
+  
+  struct AEA_MeshRenderer *sky_dome_renderer = AEA_CreateMeshRenderer();
+  sky_dome_renderer->flags |= AEA_MESH_RENDERER_STRIP;
+  AEA_BindMeshMeshRendererMesh(sky_dome_renderer, &sky_dome_mesh);
+  AEA_BindMeshRendererTexture(sky_dome_renderer, 2, 2, ground_texture_data);
+  
   struct AEA_Effect ground_effect;
   AEA_cstr ground_vert = "#version 330 core\n"
                          "layout (location = 0) in vec3 aPos;\n"
@@ -147,6 +157,8 @@ int main()
   AEA_SetEffectMVP(&ground_effect, "mvp", mat_mvp);
   AEA_CheckGLError();
   
+  fprintf(stderr, "about to start main loop\n");
+  
   while (AEA_IsWindowOpen(platform)) {
     if (AEA_GetKeyState(platform, AEA_KEY_ESC))
     {
@@ -198,6 +210,7 @@ int main()
     glm_mat4_mul(game.mat_projection, game.mat_view, mat_mvp);
     glm_mat4_mul(mat_mvp, ground_mat_model, mat_mvp);
     
+    AEA_DrawMeshRenderer(sky_dome_renderer, &ground_effect, mat_mvp);
     AEA_DrawMeshRenderer(ground_renderer, &ground_effect, mat_mvp);
 
     AEA_RenderEnd(platform);
@@ -209,16 +222,10 @@ int main()
   
   glBindVertexArray(0);
   
-  if (ground_plane_mesh.indices)
-  {
-    free(ground_plane_mesh.indices);
-  }
+  AEA_DestroyMesh(&sky_dome_mesh);
+  AEA_DestroyMesh(&ground_plane_mesh);
   
-  if (ground_plane_mesh.vertices)
-  {
-    free(ground_plane_mesh.vertices);
-  }
-  
+  AEA_DestroyMeshRenderer(sky_dome_renderer);
   AEA_DestroyMeshRenderer(ground_renderer);
 
   AEA_DestroyPlatform(platform);
