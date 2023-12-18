@@ -180,6 +180,12 @@ AEA_void AEA_DrawMeshRenderer(struct AEA_MeshRenderer *mesh_renderer, struct AEA
   glBindVertexArray(mesh_renderer->vao);
   AEA_CheckGLError();
   
+  if (glIsTexture(mesh_renderer->texture) == GL_TRUE)
+  {
+    glBindTexture(GL_TEXTURE_2D, mesh_renderer->texture);
+    AEA_CheckGLError();
+  }
+  
   AEA_UseEffect(effect);
   AEA_SetEffectMVP(effect, "mvp", mat_mvp);
   if (mesh_renderer->flags & AEA_MESH_RENDERER_STRIP)
@@ -194,4 +200,89 @@ AEA_void AEA_DrawMeshRenderer(struct AEA_MeshRenderer *mesh_renderer, struct AEA
   
   glBindVertexArray(0);
   AEA_CheckGLError();
+}
+
+AEA_void AEA_InitMeshFromFile(struct AEA_Mesh *mesh, AEA_cstr filename)
+{
+  if (!mesh || !filename)
+  {
+    return;
+  }
+  
+  // delete any existing data in the mesh
+  if (mesh->vertices)
+  {
+    fprintf(stderr, "init mesh from file - freeing existing vertices\n");
+    free(mesh->vertices);
+    mesh->vertices = NULL;
+  }
+  
+  if (mesh->indices)
+  {
+    fprintf(stderr, "init mesh from file - freeing existing indices\n");
+    free(mesh->indices);
+    mesh->indices = NULL;
+  }
+  
+  FILE *fp = fopen(filename, "r");
+  if (!fp)
+  {
+    fprintf(stderr, "unable to read from file %s\n", filename);
+    return;
+  }
+  
+  
+  
+  fclose(fp);
+  
+}
+
+AEA_void AEA_WriteMeshToFile(struct AEA_Mesh *mesh, AEA_cstr filename)
+{
+  if (!mesh || !filename)
+  {
+    return;
+  }
+  
+  FILE* fp = fopen(filename, "w");
+  if (!fp)
+  {
+    return;
+  }
+  
+  fprintf(fp, "# %s\n", filename);
+  fprintf(fp, "# vertices: %lu\n# indices: %lu\n", mesh->vertex_count, mesh->index_count);
+  for (AEA_size i = 0; i < mesh->vertex_count; i++)
+  {
+    struct AEA_Vertex *vtx = &mesh->vertices[i];
+    fprintf(fp, "v %f %f %f\n", vtx->position[0], vtx->position[1], vtx->position[2]);
+  }
+  
+  for (AEA_size i = 0; i < mesh->vertex_count; i++)
+  {
+    struct AEA_Vertex *vtx = &mesh->vertices[i];
+    fprintf(fp, "vn %f %f %f\n", vtx->normal[0], vtx->normal[1], vtx->normal[2]);
+  }
+  
+  for (AEA_size i = 0; i < mesh->vertex_count; i++)
+  {
+    struct AEA_Vertex *vtx = &mesh->vertices[i];
+    fprintf(fp, "#vc %f %f %f %f\n", vtx->color[0], vtx->color[1], vtx->color[2], vtx->color[3]);
+  }
+  
+  for (AEA_size i = 0; i < mesh->vertex_count; i++)
+  {
+    struct AEA_Vertex *vtx = &mesh->vertices[i];
+    fprintf(fp, "vt %f %f\n", vtx->uv[0], vtx->uv[1]);
+  }
+  
+  for (AEA_size i = 0; i < mesh->index_count; i += 3)
+  {
+    AEA_u32 v0 = mesh->indices[i] + 1;
+    AEA_u32 v1 = mesh->indices[i + 1] + 1;
+    AEA_u32 v2 = mesh->indices[i + 2] + 1;
+    fprintf(fp, "f %u/%u/%u %u/%u/%u %u/%u/%u\n", v0, v0, v0, v1, v1, v1, v2, v2, v2);
+  }
+  
+  fclose(fp);
 }

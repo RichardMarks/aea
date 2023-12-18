@@ -53,4 +53,7 @@ extern AEA_void AEA_BindMeshRendererTexture(struct AEA_MeshRenderer *mesh_render
 
 extern AEA_void AEA_DrawMeshRenderer(struct AEA_MeshRenderer *mesh_renderer, struct AEA_Effect *effect, mat4 mat_mvp);
 
+extern AEA_void AEA_InitMeshFromFile(struct AEA_Mesh *mesh, AEA_cstr filename);
+extern AEA_void AEA_WriteMeshToFile(struct AEA_Mesh *mesh, AEA_cstr filename);
+
 #endif //AEA_MESH_H

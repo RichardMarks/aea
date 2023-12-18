@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include <cglm/cglm.h>
 
 #include "platform/platform.h"
@@ -39,6 +42,8 @@ struct Game {
   mat4 mat_view;
   mat4 mat_projection;
 };
+
+AEA_void InitSkyDomeVertexColorsUsingColorTable(struct AEA_Mesh* sky_dome_mesh, AEA_u32 num_segments, AEA_u32 num_rings,  const AEA_u8 *color_data, AEA_u32 width, AEA_u32 height);
 
 int main()
 {
@@ -98,14 +103,37 @@ int main()
   // create a sky dome mesh
   struct AEA_Mesh sky_dome_mesh;
   memset(&sky_dome_mesh, 0, sizeof(struct AEA_Mesh));
-  AEA_InitHemisphereMesh(&sky_dome_mesh, 50.0f, 15, 7);
+  AEA_InitHemisphereMesh2(&sky_dome_mesh, 50.0f, 15, 7);
+  
+  // load color table for sky
+  // update sky dome vertex colors using color table
+  {
+    int width, height, components;
+    AEA_u8 *color_data = stbi_load("sky.png", &width, &height, &components, 4);
+    
+    InitSkyDomeVertexColorsUsingColorTable(&sky_dome_mesh, 15, 7, color_data, width, height);
+    
+    stbi_image_free(color_data);
+  }
+
+//  AEA_WriteMeshToFile(&sky_dome_mesh, "sky_dome2.obj");
   
   struct AEA_MeshRenderer *sky_dome_renderer = AEA_CreateMeshRenderer();
   sky_dome_renderer->flags |= AEA_MESH_RENDERER_STRIP;
   AEA_BindMeshMeshRendererMesh(sky_dome_renderer, &sky_dome_mesh);
-  AEA_BindMeshRendererTexture(sky_dome_renderer, 2, 2, ground_texture_data);
+  
+  AEA_u8 sky_texture_data[16] = {
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+  };
+
+  AEA_BindMeshRendererTexture(sky_dome_renderer, 2, 2, sky_texture_data);
+  
+  
+  
   
   struct AEA_Effect ground_effect;
+  struct AEA_Effect sky_effect;
   AEA_cstr ground_vert = "#version 330 core\n"
                          "layout (location = 0) in vec3 aPos;\n"
                          "layout (location = 1) in vec3 aNorm;\n"
@@ -146,6 +174,15 @@ int main()
   AEA_SetEffectUniformInt(&ground_effect, "texture1", 0);
   AEA_CheckGLError();
   
+  AEA_InitEffect(&sky_effect, ground_vert, ground_frag);
+  AEA_CheckGLError();
+  
+  AEA_UseEffect(&sky_effect);
+  AEA_CheckGLError();
+  
+  AEA_SetEffectUniformInt(&sky_effect, "texture1", 0);
+  AEA_CheckGLError();
+  
   mat4 ground_mat_model;
   glm_mat4_identity(ground_mat_model);
   
@@ -157,7 +194,12 @@ int main()
   AEA_SetEffectMVP(&ground_effect, "mvp", mat_mvp);
   AEA_CheckGLError();
   
+  AEA_SetEffectMVP(&sky_effect, "mvp", mat_mvp);
+  AEA_CheckGLError();
+  
   fprintf(stderr, "about to start main loop\n");
+  
+//  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   
   while (AEA_IsWindowOpen(platform)) {
     if (AEA_GetKeyState(platform, AEA_KEY_ESC))
@@ -210,7 +252,8 @@ int main()
     glm_mat4_mul(game.mat_projection, game.mat_view, mat_mvp);
     glm_mat4_mul(mat_mvp, ground_mat_model, mat_mvp);
     
-    AEA_DrawMeshRenderer(sky_dome_renderer, &ground_effect, mat_mvp);
+    AEA_DrawMeshRenderer(sky_dome_renderer, &sky_effect, mat_mvp);
+    
     AEA_DrawMeshRenderer(ground_renderer, &ground_effect, mat_mvp);
 
     AEA_RenderEnd(platform);
@@ -232,4 +275,94 @@ int main()
   platform = NULL;
   
   return 0;
+}
+
+AEA_void GetRGBAf32(const AEA_u8 *color_data, vec4 out_rgba)
+{
+  out_rgba[0] = (AEA_f32)color_data[0] / 255.0f;
+  out_rgba[1] = (AEA_f32)color_data[1] / 255.0f;
+  out_rgba[2] = (AEA_f32)color_data[2] / 255.0f;
+  out_rgba[3] = (AEA_f32)color_data[3] / 255.0f;
+}
+
+AEA_void InitSkyDomeVertexColorsUsingColorTable(struct AEA_Mesh* sky_dome_mesh, AEA_u32 num_segments, AEA_u32 num_rings,  const AEA_u8 *color_data, AEA_u32 width, AEA_u32 height)
+{
+  AEA_f32 time_of_day = 7.0f;
+  AEA_f32 pi_over_2 = (AEA_f32)M_PI_2;
+  AEA_f32 ring_angle = pi_over_2 / (AEA_f32)num_rings;
+  AEA_f32 segment_angle = (AEA_f32) (M_PI * 2.0) / (AEA_f32)num_segments;
+  
+  AEA_size vertex_index = 0;
+  for (AEA_u32 j = 0; j <= num_rings; j++)
+  {
+    for (AEA_u32 i = 0; i <= num_segments; i++)
+    {
+      // latitude coordinate in the dome
+      AEA_f32 theta = pi_over_2 - (ring_angle * (AEA_f32)j);
+      // longitude coordinate in the dome
+      AEA_f32 phi = segment_angle * (AEA_f32)i;
+      
+      AEA_f32 xf32 = time_of_day / 24.0f;
+      AEA_f32 yf32 = theta / pi_over_2;
+      xf32 *= (AEA_f32)width;
+      yf32 *= (AEA_f32)height;
+      
+      AEA_s32 current_color_x = (AEA_s32)xf32;
+      AEA_s32 current_color_y = (AEA_s32)yf32;
+      if (current_color_y >= height) {
+        current_color_y = (AEA_s32)(height - 1);
+      }
+      AEA_s32 next_color_x = (current_color_x >= width - 1 ? current_color_x : current_color_x + 1);
+      AEA_s32 next_color_y = (current_color_y >= height - 1 ? current_color_y : current_color_y + 1);
+      
+      vec4 c00;
+      vec4 c01;
+      vec4 c11;
+      vec4 c10;
+      
+      GetRGBAf32(color_data + (current_color_x + (current_color_y * width)), c00);
+      GetRGBAf32(color_data + (next_color_x + (current_color_y * width)), c01);
+      GetRGBAf32(color_data + (next_color_x + (next_color_y * width)), c11);
+      GetRGBAf32(color_data + (current_color_x + (next_color_y * width)), c10);
+      
+      AEA_f32 h = xf32 - (AEA_f32)current_color_x;
+      AEA_f32 v = yf32 - (AEA_f32)current_color_y;
+      
+      // calculate the horizon color
+      vec4 h0 = {
+        c00[0] * (1.0f - h) + c01[0] * h,
+        c00[1] * (1.0f - h) + c01[1] * h,
+        c00[2] * (1.0f - h) + c01[2] * h,
+        c00[3] * (1.0f - h) + c01[3] * h,
+      };
+      
+      vec4 h1 = {
+        c10[0] * (1.0f - h) + c11[0] * h,
+        c10[1] * (1.0f - h) + c11[1] * h,
+        c10[2] * (1.0f - h) + c11[2] * h,
+        c10[3] * (1.0f - h) + c11[3] * h,
+      };
+      
+      // interpolate to find the final color of the vertex
+      vec4 final = {
+        h0[0] * (1.0f - v) + h1[0] * v,
+        h0[1] * (1.0f - v) + h1[1] * v,
+        h0[2] * (1.0f - v) + h1[2] * v,
+        h0[3] * (1.0f - v) + h1[3] * v,
+      };
+      
+      if (vertex_index >= sky_dome_mesh->vertex_count)
+      {
+        fprintf(stderr, "VERTEX INDEX OUT OF BOUNDS j=%d i=%d vertex index %lu is > %lu\n", j, i, vertex_index, sky_dome_mesh->vertex_count - 1);
+        break;
+      }
+      
+      struct AEA_Vertex *vtx = &sky_dome_mesh->vertices[vertex_index];
+      
+      // update the vertex color using the final color
+      glm_vec4_copy(final, vtx->color);
+      
+      vertex_index++;
+    }
+  }
 }

@@ -15,4 +15,6 @@ extern AEA_void AEA_InitPlaneMesh(struct AEA_Mesh *mesh, AEA_f32 width, AEA_f32 
 
 extern AEA_void AEA_InitHemisphereMesh(struct AEA_Mesh *mesh, AEA_f32 radius, AEA_s32 num_segments, AEA_s32 num_rings);
 
+extern AEA_void AEA_InitHemisphereMesh2(struct AEA_Mesh *mesh, AEA_f32 radius, AEA_s32 num_segments, AEA_s32 num_rings);
+
 #endif //AEA_MESH_PRIMITIVES_H
